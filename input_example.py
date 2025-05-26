@@ -1,10 +1,10 @@
 input_data_1 = {
     "rows": [
-        ("A", 2)     # row orbit "A" has 2 orbits
+        ("A", 2)     # row "A" has 2 data (eg. ab,bc)
     ],
 
     "cols": [
-        ("X", 2)     # column orbit "X" has 2 orbit
+        ("X", 2)     # column "X" has 2 data (eg. ab,bc)
     ],
 
     "target": {
@@ -16,7 +16,7 @@ input_data_1 = {
     },
 
     "pairings": {
-        # key: (row orbit, col orbit, pattern of appropriate length)
+        # key: (row, col, pattern of appropriate length)
         # pattern: tuple of int or '*' (wildcard)
 
         ("A", "X", (1, 2))      : 5,            # (a, b) --> (a, b) then 5
