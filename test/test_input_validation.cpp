@@ -1,16 +1,71 @@
 #include <gtest/gtest.h>
-#include "input_example.h"
+#include "input.h"
 
 // Assume these validation functions are declared in some header you include
 bool validate_orbit_names(const InputData& input_data);
 bool check_input_validity(const InputData& input_data);
+bool validate_names(const InputData& input_data);
+bool validate_unique_targets(const InputData& input_data);
 
-TEST(ValidateOrbitNamesTest, InputData1IsValid) {
-    EXPECT_TRUE(validate_orbit_names(input_data_1));
+TEST(ValidateOrbitNamesTest, AllInputsValid) {
+    for (size_t i = 0; i < input_data_set.size(); ++i) {
+        EXPECT_TRUE(validate_orbit_names(input_data_set[i])) << "InputData " << (i + 1) << " failed";
+    }
 }
 
-TEST(ValidateOrbitNamesTest, InputData2IsValid) {
-    EXPECT_TRUE(validate_orbit_names(input_data_2));
+TEST(ValidateOrbitNamesTest, BlankName){
+    InputData data;
+    data.rows = {{"A", 2}, {"B", 1}};
+    data.cols = {{"", 1}, {"Y", 2}};
+    data.target = {
+        {"A", 4},
+        {"A", 7}
+    };
+    data.default_values = {
+        {{"A", "X"}, 0},
+        {{"A", "Y"}, 0},
+        {{"A", "X"}, 0},
+        {{"A", "Y"}, 0}
+    };
+    data.pairings = {
+        { {"A", "X", {1}}, 6 },
+        { {"A", "X", {2}}, 3 },
+        { {"A", "X", {'*'}}, 1 },
+
+        { {"A", "Y", {1, 2}}, 4 },
+        { {"A", "Y", {'*', 2}}, 2 },
+        { {"A", "Y", {'*', '*'}}, 0 },
+
+        { {"B", "X", {1}}, 7 },
+        { {"B", "X", {'*'}}, 3 },
+
+        { {"B", "Y", {1, '*'}}, 5 },
+        { {"B", "Y", {'*', 1}}, 2 },
+        { {"B", "Y", {'*', '*'}}, 0 }
+    };
+    
+    
+    EXPECT_FALSE(validate_orbit_names(data));
+}
+
+
+TEST(ValidateOrbitNamesTest, NoRow){
+    InputData data;
+    data.rows = {};
+    data.cols = {{"X", 2}};
+    data.target = {{"A", 4}};
+    data.default_values = {
+        {{"A", "X"}, 4}
+    };
+    data.pairings = {
+        { {"A", "X", {1, 2}}, 5 },
+        { {"A", "X", {1, '*'}}, 2 },
+        { {"A", "X", {2, 1}}, 3 },
+        { {"A", "X", {'*', 2}}, 1 },
+        { {"A", "X", {'*', '*'}}, 8 }
+    };    
+    
+    EXPECT_FALSE(validate_orbit_names(data));
 }
 
 // Duplicate Row name
@@ -86,6 +141,7 @@ TEST(ValidateOrbitNamesTest, DetectsDuplicateCols) {
     EXPECT_FALSE(validate_orbit_names(data));
 }
 
+// For some matrices it makes sense to have same row and column name eg. symmetric matrices
 TEST(ValidateOrbitNamesTest, DetectsOverlapBetweenRowsAndCols) {
     InputData data;
     data.rows = {{"A", 2}, {"X", 1}};
@@ -117,10 +173,164 @@ TEST(ValidateOrbitNamesTest, DetectsOverlapBetweenRowsAndCols) {
         { {"X", "Y", {'*', '*'}}, 0 }
     };
     
-    
-    EXPECT_FALSE(validate_orbit_names(data));
+    EXPECT_TRUE(validate_orbit_names(data));
 }
 
+TEST(ValidateAllNames, AllInputsValid){
+    for (size_t i = 0; i < input_data_set.size(); ++i) {
+        EXPECT_TRUE(validate_names(input_data_set[i])) << "InputData " << (i + 1) << " failed";
+    }
+}
+
+TEST(ValidateAllNames, NotMatchingNames){
+    InputData data;
+    data.rows = {{"0", 2}, {"1", 1}};
+    data.cols = {{"0", 1}, {"1", 2}};
+    data.target = {
+        {"0", 10},
+        {"1", 8}
+    };
+    data.default_values = {
+        {{"0", "0"}, 1},
+        {{"0", "1"}, 2},
+        {{"1", "0"}, 3},
+        {{"1", "1"}, 4}
+    };
+    data.pairings = {
+        { {"5", "0", {1}}, 9 },
+        { {"5", "0", {2}}, 5 },
+        { {"5", "0", {'*'}}, 2 },
+
+        { {"0", "1", {1, 2}}, 7 },
+        { {"0", "1", {'*', 2}}, 3 },
+        { {"0", "1", {'*', '*'}}, 0 },
+
+        { {"1", "0", {1}}, 6 },
+        { {"1", "0", {'*'}}, 1 },
+
+        { {"1", "1", {1, '*'}}, 8 },
+        { {"1", "1", {'*', 1}}, 4 },
+        { {"1", "1", {'*', '*'}}, 0 }
+    };
+
+    EXPECT_FALSE(validate_names(data));
+
+}
+
+TEST(ValidateAllNames, RowColNameMismatch){
+    InputData data;
+    data.rows = {{"R1", 2}, {"R2", 3}, {"R3", 4}};
+    data.cols = {{"C1", 3}};  // Only one column
+    data.target = {
+        {"R1", 6},
+        {"R2", 4},
+        {"R3", 7}
+    };
+    data.default_values = {
+        {{"R1", "C1"}, 0},
+        {{"R2", "C1"}, 0},
+        {{"R3", "C1"}, 0}
+    };
+    data.pairings = {
+        { {"R1", "C1", {1, 2, '*'}}, 5 },
+        { {"R1", "C1", {'*', 2, 1}}, 1 },
+
+        { {"C1", "R2", {2, 3, 1}}, 3 },
+        { {"C1", "R2", {'*', 1, '*'}}, 1 },
+
+        { {"R3", "C1", {1, 4, 3}}, 6 },
+        { {"R3", "C1", {3, '*', 1}}, 2 },
+        { {"R3", "C1", {'*', 2, 3}}, 1 }
+    };
+    EXPECT_FALSE(validate_names(data));
+}
+
+TEST(ValidateTargetMatchesRow, SizeNotSame){
+    InputData data;
+    data.rows = {{"0", 2}, {"1", 1}};
+    data.cols = {{"0", 1}, {"1", 2}};
+    data.target = {
+        {"0", 10},
+        {"1", 8},
+        {"2", 0}
+    };
+    data.default_values = {
+        {{"0", "0"}, 1},
+        {{"0", "1"}, 2},
+        {{"1", "0"}, 3},
+        {{"1", "1"}, 4}
+    };
+    data.pairings = {
+        { {"0", "0", {1}}, 9 },
+        { {"0", "0", {2}}, 5 },
+        { {"0", "0", {'*'}}, 2 },
+
+        { {"0", "1", {1, 2}}, 7 },
+        { {"0", "1", {'*', 2}}, 3 },
+        { {"0", "1", {'*', '*'}}, 0 },
+
+        { {"1", "0", {1}}, 6 },
+        { {"1", "0", {'*'}}, 1 },
+
+        { {"1", "1", {1, '*'}}, 8 },
+        { {"1", "1", {'*', 1}}, 4 },
+        { {"1", "1", {'*', '*'}}, 0 }
+    };
+    EXPECT_FALSE(validate_unique_targets(data));
+}
+
+TEST(ValidateTargetMatchesRow, EmptyTarget){
+    InputData data;
+    data.rows = {{"A", 2}};
+    data.cols = {{"X", 2}};
+    data.target = {};
+    data.default_values = {
+        {{"A", "X"}, 4}
+    };
+    data.pairings = {
+        { {"A", "X", {1, 2}}, 5 },
+        { {"A", "X", {1, '*'}}, 2 },
+        { {"A", "X", {2, 1}}, 3 },
+        { {"A", "X", {'*', 2}}, 1 },
+        { {"A", "X", {'*', '*'}}, 8 }
+    };
+    EXPECT_FALSE(validate_unique_targets(data));
+}
+
+TEST(ValidateTargetMatchesRow, RowWithMoreThanOneTarget){
+    InputData data;
+    data.rows = {{"R1", 2}, {"R2", 3}, {"R3", 4}};
+    data.cols = {{"C1", 3}};  // Only one column
+    data.target = {
+        {"R1", 6},
+        {"R1", 4},
+        {"R3", 7}
+    };
+    data.default_values = {
+        {{"R1", "C1"}, 0},
+        {{"R2", "C1"}, 0},
+        {{"R3", "C1"}, 0}
+    };
+    data.pairings = {
+        { {"R1", "C1", {1, 2, '*'}}, 5 },
+        { {"R1", "C1", {'*', 2, 1}}, 1 },
+
+        { {"R2", "C1", {2, 3, 1}}, 3 },
+        { {"R2", "C1", {'*', 1, '*'}}, 1 },
+
+        { {"R3", "C1", {1, 4, 3}}, 6 },
+        { {"R3", "C1", {3, '*', 1}}, 2 },
+        { {"R3", "C1", {'*', 2, 3}}, 1 }
+    };
+    EXPECT_FALSE(validate_unique_targets(data));
+}
+
+
+TEST(ValidateTargetMatchesRow, AllInputsValid){
+    for (size_t i = 0; i < input_data_set.size(); ++i) {
+        EXPECT_TRUE(validate_unique_targets(input_data_set[i])) << "InputData " << (i + 1) << " failed";
+    }
+}
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

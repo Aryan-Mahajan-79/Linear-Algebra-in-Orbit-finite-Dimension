@@ -8,7 +8,7 @@ GTEST_SRC = $(GTEST_DIR)/src/gtest-all.cc
 GTEST_OBJ = gtest-all.o
 
 # Project sources
-SRCS = input_validation.cpp input_example.cpp test/test_input_validation.cpp
+SRCS = input_validation.cpp input.cpp test/test_input_validation.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 TARGET = run_tests
