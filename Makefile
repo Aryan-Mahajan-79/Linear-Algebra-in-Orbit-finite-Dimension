@@ -1,28 +1,44 @@
 # Compiler
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -I. -Igoogletest/googletest/include
+CXXFLAGS = -std=c++17 -Wall -I. -Isrc -Iinclude -Igoogletest/googletest/include
+
 
 # GoogleTest source
 GTEST_DIR = googletest/googletest
 GTEST_SRC = $(GTEST_DIR)/src/gtest-all.cc
-GTEST_OBJ = gtest-all.o
+GTEST_OBJ = build/gtest-all.o
 
 # Project sources
-SRCS = input_validation.cpp input.cpp test/test_input_validation.cpp
-OBJS = $(SRCS:.cpp=.o)
+SRCS = src/input_validation.cpp src/input_data.cpp src/pattern_key.cpp test/test_input_validation.cpp
+OBJS = $(addprefix build/, $(notdir $(SRCS:.cpp=.o)))
 
 TARGET = run_tests
 
-all: $(TARGET)
+# Default rule
+all: build $(TARGET)
 
-$(GTEST_OBJ): $(GTEST_SRC)
+# Create build directory if it doesn't exist
+build:
+	mkdir -p build
+
+# Build GoogleTest object
+$(GTEST_OBJ): $(GTEST_SRC) | build
 	$(CXX) $(CXXFLAGS) -I$(GTEST_DIR) -c $< -o $@
 
-$(TARGET): $(OBJS) $(GTEST_OBJ)
-	$(CXX) $(CXXFLAGS) -pthread -o $@ $^ 
-
-%.o: %.cpp
+# Compile project sources to object files in build/
+# Rule for compiling source files from src/
+build/%.o: src/%.cpp | build
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# Rule for compiling test files from test/
+build/%.o: test/%.cpp | build
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+
+# Link everything into the final executable
+$(TARGET): $(OBJS) $(GTEST_OBJ)
+	$(CXX) $(CXXFLAGS) -pthread -o $@ $^
+
+# Cleanup
 clean:
-	rm -f *.o $(TARGET)
+	rm -rf build $(TARGET)
