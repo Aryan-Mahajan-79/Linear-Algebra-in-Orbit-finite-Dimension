@@ -1,0 +1,46 @@
+❌ Duplicate names found in rows/columns!
+
+❌ Duplicate names found in rows/columns!
+
+❌ Row and column share the same name!
+
+❌ Row "B" has a negative number of orbits: -1
+
+❌ Column "Y" has a negative number of orbits: -2
+
+❌ Invalid row name in target: 8
+
+❌ Invalid row name in default_values: 9
+
+❌ Invalid row name in pairings: 5
+
+❌ Invalid row name in pairings: 5
+
+❌ Invalid row name in pairings: 5
+
+❌ Invalid row name in pairings: 5
+
+❌ Invalid row name in pairings: 5
+
+❌ Invalid row name in pairings: 5
+
+❌ Invalid row name in pairings: C1
+
+❌ Invalid column name in pairings: R2
+
+❌ Invalid row name in pairings: C1
+
+❌ Invalid column name in pairings: R2
+
+❌ Target count does not match row count!
+
+❌ Target count does not match row count!
+
+❌ Target count does not match row count!
+
+❌ Target count does not match row count!
+
+❌ Pattern size mismatch for column "1". Expected: 2, got: 1
+
+❌ Pattern value 3 out of range for row "R1" (size 2)
+
