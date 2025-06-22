@@ -31,3 +31,24 @@ bool PatternKey::operator==(const PatternKey& other) const {
            column_ == other.column_ &&
            pattern_ == other.pattern_;
 }
+
+void PatternKey::hash_combine(std::size_t& seed, std::size_t value) {
+    seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+std::size_t PatternKey::Hasher::operator()(const PatternKey& key) const {
+    std::size_t seed = 0;
+
+    PatternKey::hash_combine(seed, std::hash<std::string>{}(key.getRow()));
+    PatternKey::hash_combine(seed, std::hash<std::string>{}(key.getColumn()));
+
+    for (const auto& elem : key.getPattern()) {
+        if (std::holds_alternative<int>(elem)) {
+            PatternKey::hash_combine(seed, std::hash<int>{}(std::get<int>(elem)));
+        } else {
+            PatternKey::hash_combine(seed, std::hash<char>{}(std::get<char>(elem)));
+        }
+    }
+
+    return seed;
+}

@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include <variant>
+#include <functional>
+
 
 class PatternKey {
 public:
@@ -17,10 +19,15 @@ public:
     const std::string& getColumn() const;
     const std::vector<PatternElement>& getPattern() const;
 
+    struct Hasher {
+        std::size_t operator()(const PatternKey& key) const;
+    };
+
 private:
     std::string row_;
     std::string column_;
     std::vector<PatternElement> pattern_;
 
     static bool compareElement(const PatternElement& a, const PatternElement& b);
+    static void hash_combine(std::size_t& seed, std::size_t value);
 };

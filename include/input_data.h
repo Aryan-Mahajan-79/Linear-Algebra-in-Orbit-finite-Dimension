@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_set>
 
 class InputData {
 public:
@@ -22,6 +23,12 @@ public:
     const std::map<std::string, int>& getTarget() const;
     const std::map<std::pair<std::string, std::string>, int>& getDefaultValues() const;
     const std::map<PatternKey, int>& getPairings() const;
+
+    const int getDefaultValue(const std::string& row, const std::string& col) const;
+    const int getPairingValue(const std::string& row, const std::string& col, const std::vector<PatternKey::PatternElement>& pattern) const;
+
+    void print() const;
+
 
 private:
     std::vector<RowOrCol> rows_;
