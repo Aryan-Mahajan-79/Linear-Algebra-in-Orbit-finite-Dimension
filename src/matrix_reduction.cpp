@@ -151,3 +151,11 @@ InputData MatrixReduction::reduce_the_matrix_by_one_dimension(InputData& input_d
 
     return new_data;
 }
+
+InputData reduce_the_matrix_completely(InputData& input_data){
+    InputData data;
+    while(MatrixReduction::get_maximum_dimension_of_the_matrix(input_data.getRows()) > 0){
+        data = reduce_the_matrix_by_one_dimension(input_data);
+    }
+    return data;
+}
