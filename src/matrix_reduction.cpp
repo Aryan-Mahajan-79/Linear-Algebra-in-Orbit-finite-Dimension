@@ -1,6 +1,7 @@
 #include "matrix_reduction.h"
+#include<iostream>
 
-using PatternElement = PatternKey::PatternElement;
+using PatternElement = PatternKey::PatternKey::PatternElement;
 
 void MatrixReduction::fill_missing_default_values_with_zero(InputData& data) {
     const auto& rows = data.getRows();
@@ -17,72 +18,46 @@ void MatrixReduction::fill_missing_default_values_with_zero(InputData& data) {
     }
 }
 
-void MatrixReduction::generate_patterns(int col_size, int row_size, std::vector<PatternElement>& current, std::vector<std::vector<PatternElement>>& all) {
-    if (static_cast<int>(current.size()) == col_size) {
-        all.push_back(current);
-        return;
-    }
+void MatrixReduction::generate_patterns(int col_size, int row_size, std::vector<std::vector<PatternKey::PatternElement>>& all_patterns) {
+    // 2^col_size
+    int total_masks = 1 << col_size;
 
-    for (int i = 1; i <= row_size; ++i) {
-        current.push_back(i);
-        generate_patterns(col_size, row_size, current, all);
-        current.pop_back();
-    }
+    for (int mask = 0; mask < total_masks; ++mask) {
+        bool all_wildcard = (mask == total_masks - 1);
 
-    current.push_back('*');
-    generate_patterns(col_size, row_size, current, all);
-    current.pop_back();
-}
-
-namespace {
-
-void expandAndInsertDefaults(const std::vector<PatternElement>& pattern,
-                             const std::string& row_name,
-                             const std::string& col_name,
-                             int row_size,
-                             std::unordered_set<PatternKey, PatternKey::Hasher>& existing_keys,
-                             InputData& data) {
-    std::function<void(size_t, std::vector<PatternElement>&)> expand;
-    expand = [&](size_t index, std::vector<PatternElement>& partial) {
-        if (index == pattern.size()) {
-            PatternKey key(row_name, col_name, partial);
-            if (existing_keys.find(key) == existing_keys.end()) {
-                int default_val = data.getDefaultValue(row_name, col_name);
-                data.addPairing(row_name, col_name, partial, default_val);
-                existing_keys.insert(key);
+        std::function<void(int, std::vector<PatternKey::PatternElement>&)> generate;
+        generate = [&](int pos, std::vector<PatternKey::PatternElement>& current) {
+            if (pos == col_size) {
+                all_patterns.push_back(current);
+                return;
             }
-            return;
-        }
 
-        const auto& elem = pattern[index];
-        if (std::holds_alternative<char>(elem) && std::get<char>(elem) == '*') {
-            for (int i = 1; i < row_size; ++i) {
-                partial.push_back(i);
-                expand(index + 1, partial);
-                partial.pop_back();
+            if ((mask >> pos) & 1) {
+                // Add Wildcard and call generate
+                current.push_back('*');
+                generate(pos + 1, current);
+                current.pop_back();
+            } 
+            else {
+                // Iterate over numeric values and call generate
+                for (int i = 1; i <= row_size; ++i) {
+                    current.push_back(i);
+                    generate(pos + 1, current);
+                    current.pop_back();
+                }
             }
-        } else {
-            partial.push_back(elem);
-            expand(index + 1, partial);
-            partial.pop_back();
-        }
-    };
+        };
 
-    std::vector<PatternElement> partial;
-    expand(0, partial);
-}
+        std::vector<PatternKey::PatternElement> current;
+        generate(0, current);
 
-bool containsWildcard(const std::vector<PatternElement>& pattern) {
-    for (const auto& elem : pattern) {
-        if (std::holds_alternative<char>(elem) && std::get<char>(elem) == '*') {
-            return true;
-        }
+        if (all_wildcard) break; // Handle (*,*,...,*) only once at end
     }
-    return false;
+
+    // Add (*,*,...,*)
+    std::vector<PatternKey::PatternElement> all_stars(col_size, '*');
+    all_patterns.push_back(all_stars);
 }
-
-} 
-
 
 void MatrixReduction::fill_missing_pairing_with_the_default_values(InputData& data) {
     const auto& rows = data.getRows();
@@ -97,27 +72,23 @@ void MatrixReduction::fill_missing_pairing_with_the_default_values(InputData& da
     for (const auto& [row_name, row_size] : rows) {
         for (const auto& [col_name, col_size] : cols) {
 
-            std::vector<std::vector<PatternElement>> all_patterns;
-            std::vector<PatternElement> current;
-            generate_patterns(col_size, row_size, current, all_patterns);
+            std::vector<std::vector<PatternKey::PatternElement>> all_patterns;
+            MatrixReduction::generate_patterns(col_size, row_size, all_patterns);
 
             for (const auto& pattern : all_patterns) {
-                if (containsWildcard(pattern)) {
-                    expandAndInsertDefaults(pattern, row_name, col_name, row_size, existing_keys, data);
-                } else {
-                    PatternKey key(row_name, col_name, pattern);
-                    if (existing_keys.find(key) == existing_keys.end()) {
-                        int default_val = data.getDefaultValue(row_name, col_name);
-                        data.addPairing(row_name, col_name, pattern, default_val);
-                        existing_keys.insert(key);
-                    }
+                PatternKey key(row_name, col_name, pattern);
+                if (existing_keys.find(key) == existing_keys.end()) {
+                    int default_val = data.getDefaultValue(row_name, col_name);
+                    data.addPairing(row_name, col_name, pattern, default_val);
+                    existing_keys.insert(key);
                 }
             }
         }
     }
 }
 
-int get_maximum_dimension_of_the_matrix(const std::vector<InputData::RowOrCol>& rows) {
+
+int MatrixReduction::get_maximum_dimension_of_the_matrix(const std::vector<InputData::RowOrCol>& rows) {
     int max_size = 0;
     for (const auto& [name, size] : rows) {
         if (size > max_size) {
@@ -127,7 +98,7 @@ int get_maximum_dimension_of_the_matrix(const std::vector<InputData::RowOrCol>& 
     return max_size;
 }
 
-void replace_a_row_of_n_dimension_by_n_rows_of_dimension_n_minus_1(InputData& input_data,const InputData::RowOrCol& row){
+void MatrixReduction::replace_a_row_of_n_dimension_by_n_rows_of_dimension_n_minus_1(InputData& input_data,const InputData::RowOrCol& row){
     const std::string& row_name = row.first;
     int row_size = row.second;
 
@@ -148,10 +119,10 @@ void replace_a_row_of_n_dimension_by_n_rows_of_dimension_n_minus_1(InputData& in
               << " rows of size " << (row_size - 1) << ".\n";
 }
 
-InputData& reduce_the_matrix_by_one_dimension(InputData& input_data){
+InputData MatrixReduction::reduce_the_matrix_by_one_dimension(InputData& input_data){
     InputData new_data;
 
-    int max_dimension = get_maximum_dimension_of_the_matrix(input_data.getRows());
+    int max_dimension = MatrixReduction::get_maximum_dimension_of_the_matrix(input_data.getRows());
 
     // Rows
     for (const auto& row : input_data.getRows()) {
@@ -174,7 +145,7 @@ InputData& reduce_the_matrix_by_one_dimension(InputData& input_data){
     }
 
     // Target
-
+    
 
     // Pairings
 

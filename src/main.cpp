@@ -42,14 +42,12 @@ int main() {
         std::cerr<<"Invalid Input"<<std::endl;
         return 1;
     }
-    MatrixReduction::fill_missing_default_values_with_zero(input_data);
-    MatrixReduction::fill_missing_pairing_with_the_default_values(input_data);
+    // InputData reduced_input_data = MatrixReduction::reduce_the_matrix_completely(input_data);
     input_data.print();
     if (!InputValidation::check_input_validity(input_data)) {
         std::cerr<<"Invalid after filling"<<std::endl;
         return 1;
     }
     // input_data.print();
-    // InputData reduced_input_data = MatrixReduction::reduce_the_matrix_completely(input_data);
     return 0;
 }

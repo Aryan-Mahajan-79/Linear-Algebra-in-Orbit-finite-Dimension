@@ -3,13 +3,34 @@
 
 class MatrixReduction{
     public:
+        static InputData reduce_the_matrix_completely(InputData& input_data);
+    
+    private:
         static void fill_missing_default_values_with_zero(InputData& input_data);
         static void fill_missing_pairing_with_the_default_values(InputData& input_data);
-        static InputData& reduce_the_matrix_completely(InputData& input_data);
-        
-    private:
-        static InputData& reduce_the_matrix_by_one_dimension(InputData& input_data);
-        static void generate_patterns(int col_size, int row_size, std::vector<PatternKey::PatternElement>& current, std::vector<std::vector<PatternKey::PatternElement>>& all);
-        static int get_maximum_dimension_of_the_matrix(const std::vector<InputData::RowOrCol> rows);
-        static void replace_a_row_of_n_dimension_by_n_rows_of_dimension_n_minus_1(InputData& input_data,const InputData::RowOrCol& row)
+        static void generate_patterns(int col_size, int row_size, std::vector<std::vector<PatternKey::PatternElement>>& all_patterns);
+        static InputData reduce_the_matrix_by_one_dimension(InputData& input_data);
+        static int get_maximum_dimension_of_the_matrix(const std::vector<InputData::RowOrCol>& rows);
+        static void replace_a_row_of_n_dimension_by_n_rows_of_dimension_n_minus_1(InputData& input_data,const InputData::RowOrCol& row);
+
+
+
+    // Friend Classes for testing
+    friend class FillMissingDefaultValuesWithZero_SomeDefaultValuesDefined_Test;
+    friend class FillMissingDefaultValuesWithZero_AllDefaultValuesDefined_Test;
+    friend class FillMissingDefaultValuesWithZero_NoDefaultValuesDefined_Test;
+    friend class FillMissingDefaultValuesWithZero_LargeMatrix_Test;
+
+    friend class FillMissingPairingWithDefaultValues_SomePairingsDefined_Test;
+    friend class FillMissingPairingWithDefaultsValues_NoPairingsDefined_Test;
+    friend class FillMissingPairingWithDefaultsValues_PartiallyFilledPairings_Test;
+    friend class FillMissingPairingWithDefaultsValues_MultipleRowsAndColumns_Test;
+
+    friend class GetMaxDimensionOfTheMatrix_SingleElement_Test;
+    friend class GetMaxDimensionOfTheMatrix_AllEqualSizes_Test;
+    friend class GetMaxDimensionOfTheMatrix_VaryingSizes_Test;
+
+
+    friend class ReplaceRowByNMinus1Rows_BasicReplacement_Test;
+
 };
