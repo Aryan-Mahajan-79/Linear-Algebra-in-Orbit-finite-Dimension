@@ -2,6 +2,8 @@
 #include<iostream>
 
 using PatternElement = PatternKey::PatternKey::PatternElement;
+std::vector<bool> MatrixReduction::newly_created_rows;
+
 
 void MatrixReduction::fill_missing_default_values_with_zero(InputData& data) {
     const auto& rows = data.getRows();
@@ -18,13 +20,13 @@ void MatrixReduction::fill_missing_default_values_with_zero(InputData& data) {
     }
 }
 
-void MatrixReduction::generate_patterns(int col_size, int row_size, std::vector<std::vector<PatternKey::PatternElement>>& all_patterns) {
+std::vector<std::vector<PatternKey::PatternElement>> MatrixReduction::generate_patterns(int col_size, int row_size) {
+    std::vector<std::vector<PatternKey::PatternElement>> all_patterns;
     // number of subsets of columns
     int total_masks = 1 << col_size;
 
     //mask describes a pattern of wildcards in the column data
     for (int mask = 0; mask < total_masks; ++mask) {
-        bool all_wildcard = (mask == total_masks - 1);
 
         std::function<void(int, std::vector<PatternKey::PatternElement>&)> generate;
         generate = [&](int pos, std::vector<PatternKey::PatternElement>& current) {
@@ -59,6 +61,7 @@ void MatrixReduction::generate_patterns(int col_size, int row_size, std::vector<
     // Add (*,*,...,*)
     std::vector<PatternKey::PatternElement> all_stars(col_size, '*');
     all_patterns.push_back(all_stars);
+    return all_patterns;
 }
 
 void MatrixReduction::fill_missing_pairing_with_the_default_values(InputData& data) {
@@ -75,7 +78,7 @@ void MatrixReduction::fill_missing_pairing_with_the_default_values(InputData& da
         for (const auto& [col_name, col_size] : cols) {
 
             std::vector<std::vector<PatternKey::PatternElement>> all_patterns;
-            MatrixReduction::generate_patterns(col_size, row_size, all_patterns);
+            all_patterns = MatrixReduction::generate_patterns(col_size, row_size);
 
             for (const auto& pattern : all_patterns) {
                 PatternKey key(row_name, col_name, pattern);
@@ -100,122 +103,88 @@ int MatrixReduction::get_maximum_dimension_of_the_matrix(const std::vector<Input
     return max_size;
 }
 
-void MatrixReduction::add_new_rows_for_a_sigle_input_row_in_the_reduction_process(InputData& input_data,const InputData::RowOrCol& row, InputDate& output_data){
+void MatrixReduction::add_new_rows_for_a_sigle_input_row_in_the_reduction_process(InputData& input_data,const InputData::RowOrCol& row, InputData& output_data){
     const std::string& row_name = row.first;
     int row_size = row.second;
 
-    maximal_dimension = get_maximum_dimension_of_the_matrix(input_data)
+    int max_dimension = MatrixReduction::get_maximum_dimension_of_the_matrix(input_data.getRows());
 
     if (row_size < 1) {
         std::cerr << "⚠️ Cannot decompose row '" << row_name << "' of size " << row_size << ". Skipping.\n";
         return;
     }
-    else if( row.scond < max_dimension){
-        output_data.addRow(row);
-        newly_created_row.push_back(false);
+    if(row.second < max_dimension){
+        output_data.addRow(row.first, row.second);
+        newly_created_rows.push_back(false);
     }
-    else {
+    else{
         for (int i = 0; i < row_size - 1; ++i) {
             std::string new_row_name = row_name + "_" + std::to_string(i + 1);
             output_data.addRow(new_row_name, row_size - 1);
-            newly_created_row.push_back(true);
+            newly_created_rows.push_back(true);
         }
     }
-
-
-    
-
-
-//    std::cout << "✅ Replaced row '" << row_name << "' with " << (row_size - 1)
-//              << " rows of size " << (row_size - 1) << ".\n";
 }
 
 InputData MatrixReduction::reduce_the_matrix_by_one_dimension(InputData& input_data){
     InputData new_data;
 
+    const auto& rows = input_data.getRows();
+    const auto& cols = input_data.getColumns();
 
     // New columns
-    for (auto c : input_data.getColumns()){
-        new_data.addColumn(c)}
-
+    for (const auto& c : cols){
+        new_data.addColumn(c.first, c.second);
+    }
 
     // New rows
+
     //But first we have to clear vector newly_created_rows;
     newly_created_rows.clear();
-    int max_dimension = MatrixReduction::get_maximum_dimension_of_the_matrix(input_data.getRows());
-    // first i copy the rows in the input_data, next i process them using replace_a_row_of_n_dimension_by_n_rows_of_dimension_n_minus_1 
+
+    // first I copy the rows in the input_data, next I process them using add_new_rows_for_a_sigle_input_row_in_the_reduction_process
     // function, that changes them to the proper new set of rows 
-    for (auto r : input_data.getRows()){
-      add_new_rows_for_a_sigle_input_row_in_the_reduction_process(input_data, r, new_data);
+    for (const auto& row : rows){
+        MatrixReduction::add_new_rows_for_a_sigle_input_row_in_the_reduction_process(input_data, row, new_data);
     }
     // New Default
-        //We dont need to add them as we dont use dafault data on this stage of the reduction, everything is explicite
+        // We dont need to add them as we don't use dafault data on this stage of the reduction, everything is explicit
 
     // New Target
-      for (int i=0; i<input_data.getROws().size(); i++) {
-        auto row= input_data.getRows().at(i);
-        const std::string& name = row.first;
-        int size = row.second;
+    for (std::size_t i=0; i<rows.size(); i++) {
+        auto row= rows[i];
+        const std::string& row_name = row.first;
 
-        if (newly_created_rows.at(i) == 0 ) {
-            new_data.setTarget(name, input_data.getTarget().at(name))
+        if (!newly_created_rows[i]) {
+            new_data.setTarget(row_name, input_data.getTarget().at(row_name));
         } else {
-            new_data.setTarget(name, 0);
+            new_data.setTarget(row_name, 0);
         }
-
-             
-
     }
     // New Matrix
 
-        for (auto c : new_data.getColumns())
-            for(int i =0; i<new_data.getRows(); i++){
-                if (!(newly_created_rows[i])){
-                    auto patternKeys = //generate all the patern keys
+    for (auto column : new_data.getColumns()){
+        const std::string& col_name = column.first;
+        const int col_size = column.second;
+        for(std::size_t i=0; i<new_data.getRows().size(); i++){
+            const auto& row = rows[i];
+            if (!(newly_created_rows[i])){
+                const std::string& row_name = row.first;
+                const int row_size = row.second;
+                std::vector<std::vector<PatternKey::PatternElement>> all_patterns = MatrixReduction::generate_patterns(col_size, row_size);
 
-                    for (auto patern: patternKeys){
-                        // copy the value
-                        new_data.addPairing(pattern)
-                    }      
-                }
-                else{
-                    // here we calutually calculate the f function look to the thesis page ....
-
-                    
-
-                }
+                for (const auto& pattern : all_patterns) {
+                    // Copy value from the original input_data
+                    int value = input_data.getPairingValue(row_name, col_name, pattern);
+                    new_data.addPairing(row_name, col_name, pattern, value);
+                }      
             }
-
-
-    int max_dimension = MatrixReduction::get_maximum_dimension_of_the_matrix(input_data.getRows());
-
-    // Rows
-    for (int i=0; i<input_data.getROws().size(); i++) {
-        auto row= input_data.getRows().at(i);
-        const std::string& name = row.first;
-        int size = row.second;
-
-        if (newly_created_rows.at(i) == 0 ) {
-            new_data.setTarget(name, input_data.getTarget().at(name))
-        } else {
-            new_data.setTarget(name, 0);
+            else{
+                // here we calculate the f function look to the thesis page 75
+                
+            }
         }
-
-             
-
     }
-    
-
-    // Columns
-    for (const auto& col : input_data.getColumns()) {
-        new_data.addColumn(col.first, col.second);
-    }
-
-    // Target
-    
-
-    // Pairings
-
     return new_data;
 }
 
