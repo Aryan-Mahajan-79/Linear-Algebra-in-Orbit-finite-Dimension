@@ -19,9 +19,10 @@ void MatrixReduction::fill_missing_default_values_with_zero(InputData& data) {
 }
 
 void MatrixReduction::generate_patterns(int col_size, int row_size, std::vector<std::vector<PatternKey::PatternElement>>& all_patterns) {
-    // 2^col_size
+    // number of subsets of columns
     int total_masks = 1 << col_size;
 
+    //mask describes a pattern of wildcards in the column data
     for (int mask = 0; mask < total_masks; ++mask) {
         bool all_wildcard = (mask == total_masks - 1);
 
@@ -51,7 +52,8 @@ void MatrixReduction::generate_patterns(int col_size, int row_size, std::vector<
         std::vector<PatternKey::PatternElement> current;
         generate(0, current);
 
-        if (all_wildcard) break; // Handle (*,*,...,*) only once at end
+        // probably to remove
+        //if (all_wildcard) break; // Handle (*,*,...,*) only once at end
     }
 
     // Add (*,*,...,*)
@@ -98,46 +100,111 @@ int MatrixReduction::get_maximum_dimension_of_the_matrix(const std::vector<Input
     return max_size;
 }
 
-void MatrixReduction::replace_a_row_of_n_dimension_by_n_rows_of_dimension_n_minus_1(InputData& input_data,const InputData::RowOrCol& row){
+void MatrixReduction::add_new_rows_for_a_sigle_input_row_in_the_reduction_process(InputData& input_data,const InputData::RowOrCol& row, InputDate& output_data){
     const std::string& row_name = row.first;
     int row_size = row.second;
 
-    if (row_size <= 1) {
+    maximal_dimension = get_maximum_dimension_of_the_matrix(input_data)
+
+    if (row_size < 1) {
         std::cerr << "⚠️ Cannot decompose row '" << row_name << "' of size " << row_size << ". Skipping.\n";
         return;
     }
-
-    auto& rows = const_cast<std::vector<InputData::RowOrCol>&>(input_data.getRows());
-    rows.erase(std::remove_if(rows.begin(), rows.end(), [&](const InputData::RowOrCol& r) { return r.first == row_name; }), rows.end());
-
-    for (int i = 0; i < row_size - 1; ++i) {
-        std::string new_row_name = row_name + "_" + std::to_string(i + 1);
-        input_data.addRow(new_row_name, row_size - 1);
+    else if( row.scond < max_dimension){
+        output_data.addRow(row);
+        newly_created_row.push_back(false);
+    }
+    else {
+        for (int i = 0; i < row_size - 1; ++i) {
+            std::string new_row_name = row_name + "_" + std::to_string(i + 1);
+            output_data.addRow(new_row_name, row_size - 1);
+            newly_created_row.push_back(true);
+        }
     }
 
-    std::cout << "✅ Replaced row '" << row_name << "' with " << (row_size - 1)
-              << " rows of size " << (row_size - 1) << ".\n";
+
+    
+
+
+//    std::cout << "✅ Replaced row '" << row_name << "' with " << (row_size - 1)
+//              << " rows of size " << (row_size - 1) << ".\n";
 }
 
 InputData MatrixReduction::reduce_the_matrix_by_one_dimension(InputData& input_data){
     InputData new_data;
 
-    int max_dimension = MatrixReduction::get_maximum_dimension_of_the_matrix(input_data.getRows());
 
-    // Rows
-    for (const auto& row : input_data.getRows()) {
+    // New columns
+    for (auto c : input_data.getColumns()){
+        new_data.addColumn(c)}
+
+
+    // New rows
+    //But first we have to clear vector newly_created_rows;
+    newly_created_rows.clear();
+    int max_dimension = MatrixReduction::get_maximum_dimension_of_the_matrix(input_data.getRows());
+    // first i copy the rows in the input_data, next i process them using replace_a_row_of_n_dimension_by_n_rows_of_dimension_n_minus_1 
+    // function, that changes them to the proper new set of rows 
+    for (auto r : input_data.getRows()){
+      add_new_rows_for_a_sigle_input_row_in_the_reduction_process(input_data, r, new_data);
+    }
+    // New Default
+        //We dont need to add them as we dont use dafault data on this stage of the reduction, everything is explicite
+
+    // New Target
+      for (int i=0; i<input_data.getROws().size(); i++) {
+        auto row= input_data.getRows().at(i);
         const std::string& name = row.first;
         int size = row.second;
 
-        if (size == max_dimension && size > 1) {
-            for (int i = 0; i < size; ++i) {
-                std::string new_row_name = name + "_" + std::to_string(i + 1);
-                new_data.addRow(new_row_name, size - 1);
-            }
+        if (newly_created_rows.at(i) == 0 ) {
+            new_data.setTarget(name, input_data.getTarget().at(name))
         } else {
-            new_data.addRow(name, size);
+            new_data.setTarget(name, 0);
         }
+
+             
+
     }
+    // New Matrix
+
+        for (auto c : new_data.getColumns())
+            for(int i =0; i<new_data.getRows(); i++){
+                if (!(newly_created_rows[i])){
+                    auto patternKeys = //generate all the patern keys
+
+                    for (auto patern: patternKeys){
+                        // copy the value
+                        new_data.addPairing(pattern)
+                    }      
+                }
+                else{
+                    // here we calutually calculate the f function look to the thesis page ....
+
+                    
+
+                }
+            }
+
+
+    int max_dimension = MatrixReduction::get_maximum_dimension_of_the_matrix(input_data.getRows());
+
+    // Rows
+    for (int i=0; i<input_data.getROws().size(); i++) {
+        auto row= input_data.getRows().at(i);
+        const std::string& name = row.first;
+        int size = row.second;
+
+        if (newly_created_rows.at(i) == 0 ) {
+            new_data.setTarget(name, input_data.getTarget().at(name))
+        } else {
+            new_data.setTarget(name, 0);
+        }
+
+             
+
+    }
+    
 
     // Columns
     for (const auto& col : input_data.getColumns()) {

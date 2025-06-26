@@ -7,9 +7,10 @@ class MatrixReduction{
         static int get_maximum_dimension_of_the_matrix(const std::vector<InputData::RowOrCol>& rows);
     
     private:
+        std::vector<bool> newly_created_rows;
         static void fill_missing_default_values_with_zero(InputData& input_data);
         static void fill_missing_pairing_with_the_default_values(InputData& input_data);
-        static void generate_patterns(int col_size, int row_size, std::vector<std::vector<PatternKey::PatternElement>>& all_patterns);
+        static void generate_patterns(const int col_size, const int row_size, std::vector<std::vector<PatternKey::PatternElement>>& all_patterns);
         static InputData reduce_the_matrix_by_one_dimension(InputData& input_data);
         static void replace_a_row_of_n_dimension_by_n_rows_of_dimension_n_minus_1(InputData& input_data,const InputData::RowOrCol& row);
 
