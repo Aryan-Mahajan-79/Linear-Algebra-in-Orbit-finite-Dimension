@@ -9,7 +9,16 @@ GTEST_SRC = $(GTEST_DIR)/src/gtest-all.cc
 GTEST_OBJ = build/gtest-all.o
 
 # Project sources
-SRCS = src/input_validation.cpp src/input_data.cpp src/pattern_key.cpp src/logger.cpp src/matrix_reduction.cpp test/test_input_validation.cpp test/test_matrix_reduction.cpp
+SRCS = \
+	src/input_validation.cpp \
+	src/input_data.cpp \
+	src/pattern_key.cpp \
+	src/logger.cpp \
+	src/matrix_reduction.cpp \
+	src/solving_linear_equations.cpp \
+	test/test_input_validation.cpp \
+	test/test_matrix_reduction.cpp \
+	test/test_solving_linear_equations.cpp
 OBJS = $(addprefix build/, $(notdir $(SRCS:.cpp=.o)))
 
 TARGET = run_tests
