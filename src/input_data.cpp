@@ -64,8 +64,21 @@ const int InputData::getPairingValue(const std::string& row,
     if (it != pairings_.end()) {
         return it->second;
     }
+
+    std::cerr << "Pairing value not found for (" << row << ", " << col << ") with pattern: [";
+    for (size_t i = 0; i < pattern.size(); ++i) {
+        std::visit([](auto&& arg) {
+            std::cerr << arg;
+        }, pattern[i]);
+
+        if (i + 1 < pattern.size()) {
+            std::cerr << ", ";
+        }
+    }
+    std::cerr << "]" << std::endl;
     throw std::runtime_error("Pairing value not found for (" + row + ", " + col + ")");
 }
+
 
 void InputData::print() const {
     std::cout << "=== Input Data ===\n";

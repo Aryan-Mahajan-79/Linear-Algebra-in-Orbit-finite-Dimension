@@ -52,3 +52,12 @@ std::size_t PatternKey::Hasher::operator()(const PatternKey& key) const {
 
     return seed;
 }
+
+int PatternKey::convert_to_int(const PatternKey::PatternElement& element) {
+        if (std::holds_alternative<int>(element)) {
+            return std::get<int>(element);
+        } else if (std::holds_alternative<char>(element)) {
+            return -1; // Wildcard represented by '*'
+        }
+        throw std::runtime_error("Invalid PatternElement type");
+    }

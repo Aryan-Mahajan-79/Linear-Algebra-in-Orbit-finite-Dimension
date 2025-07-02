@@ -2,6 +2,7 @@
 #include "input_data.h"
 #include "input_validation.h"
 #include "matrix_reduction.h"
+#include "solving_linear_equations.h"
 
 InputData input_data = [] {
     InputData data;
@@ -37,17 +38,20 @@ InputData input_data = [] {
 }();
 
 int main() {
-    
+    std::cout<<"Start"<<std::endl;
     if (!InputValidation::check_input_validity(input_data)) {
         std::cerr<<"Invalid Input"<<std::endl;
         return 1;
     }
-    InputData reduced_input_data = MatrixReduction::reduce_the_matrix_completely(input_data);
+    std::cout<<"Going in matrix reduction"<<std::endl;
+    InputData reduced_matrix = MatrixReduction::reduce_the_matrix_completely(input_data);
+    std::cout<<"Coming out of matrix reduction"<<std::endl;
     input_data.print();
     if (!InputValidation::check_input_validity(input_data)) {
         std::cerr<<"Invalid after filling"<<std::endl;
         return 1;
     }
+    SolveLinearEquations::print_matrix(reduced_matrix);
     // input_data.print();
     return 0;
 }

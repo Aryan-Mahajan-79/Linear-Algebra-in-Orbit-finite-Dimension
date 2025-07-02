@@ -30,6 +30,11 @@ all: build $(TARGET)
 build:
 	mkdir -p build
 
+program: build/program
+
+build/program: src/main.cpp src/input_data.cpp src/pattern_key.cpp src/input_validation.cpp src/logger.cpp src/matrix_reduction.cpp src/solving_linear_equations.cpp
+	$(CXX) $(CXXFLAGS) -Iinclude $^ -o $@
+
 # Build GoogleTest object
 $(GTEST_OBJ): $(GTEST_SRC) | build
 	$(CXX) $(CXXFLAGS) -I$(GTEST_DIR) -c $< -o $@

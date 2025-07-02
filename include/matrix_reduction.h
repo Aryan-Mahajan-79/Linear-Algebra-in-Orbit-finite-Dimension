@@ -11,6 +11,8 @@ class MatrixReduction{
         static void fill_missing_default_values_with_zero(InputData& input_data);
         static void fill_missing_pairing_with_the_default_values(InputData& input_data);
         static std::vector<std::vector<PatternKey::PatternElement>> generate_patterns(int col_size, int row_size);
+        static int get_arity_of_column(const InputData& input_data, const std::string col_name);
+        static int calculate_f_function(InputData& input_data, std::string old_row_name, int index , std::string old_col_name, std::vector<PatternKey::PatternElement> new_pattern);
         static InputData reduce_the_matrix_by_one_dimension(InputData& input_data);
         static void add_new_rows_for_a_sigle_input_row_in_the_reduction_process(InputData& input_data,const InputData::RowOrCol& row, InputData& output_data);
 

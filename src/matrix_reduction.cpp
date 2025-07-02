@@ -126,6 +126,55 @@ void MatrixReduction::add_new_rows_for_a_sigle_input_row_in_the_reduction_proces
     }
 }
 
+int MatrixReduction::get_arity_of_column(const InputData& input_data, const std::string col_name){
+    for (const auto& col : input_data.getColumns()) {
+        if (col.first == col_name) {
+            return col.second;
+        }
+    }
+    throw std::invalid_argument("Column name not found: " + col_name);
+}
+
+std::vector<PatternElement> create_a_new_pattern_element(int index, std::vector<PatternKey::PatternElement> new_pattern, int i) {
+    std::vector<PatternElement> pattern;
+
+    for (int j =0; j< index; j++){
+        pattern.push_back(new_pattern[j]);
+
+    }
+    pattern.push_back(i);
+    for (std::size_t j = index + 1; j < new_pattern.size(); j++){
+        pattern.push_back(new_pattern[j]);
+    }
+    return pattern;
+}
+
+int MatrixReduction::calculate_f_function(InputData& input_data, std::string old_row_name, int index , std::string old_col_name, std::vector<PatternKey::PatternElement> new_pattern){
+    std::string new_row_name = old_row_name + "_" + std::to_string(index);
+    std::list<std::vector<PatternElement> >  index_extensions_of_the_new_pattern;
+    // we need to create a list of all possibe index_extensions of the new_pattern to know which old orbits we have to sum when we calculate the function f.
+    // first we determine indices of column data that bound where then index can be matched
+    int lowerbound_for_index = (index == 0) ? -1 : PatternKey::convert_to_int(new_pattern[index -1]);
+
+    int maximal_index_of_data_supporting_column = MatrixReduction::get_arity_of_column(input_data, old_col_name);
+
+    int upperbound_for_index = (index == (int)new_pattern.size()) ? maximal_index_of_data_supporting_column +1  : PatternKey::convert_to_int(new_pattern[index + 1]);
+
+    // now we generate all possible index_extensions of the new_pattern
+    for (int i = lowerbound_for_index + 1; i < upperbound_for_index; i++){
+        if(i==0)continue;
+        std::vector<PatternElement> new_element = create_a_new_pattern_element(index, new_pattern, i);
+        index_extensions_of_the_new_pattern.push_back(new_element);
+    }
+
+    int sum = 0;
+    for (auto extension : index_extensions_of_the_new_pattern){
+        int value = input_data.getPairingValue(old_row_name, old_col_name, extension);
+        sum += value;
+    }
+    return sum;
+}
+
 InputData MatrixReduction::reduce_the_matrix_by_one_dimension(InputData& input_data){
     InputData new_data;
 
@@ -147,6 +196,7 @@ InputData MatrixReduction::reduce_the_matrix_by_one_dimension(InputData& input_d
     for (const auto& row : rows){
         MatrixReduction::add_new_rows_for_a_sigle_input_row_in_the_reduction_process(input_data, row, new_data);
     }
+
     // New Default
         // We dont need to add them as we don't use dafault data on this stage of the reduction, everything is explicit
 
@@ -167,12 +217,12 @@ InputData MatrixReduction::reduce_the_matrix_by_one_dimension(InputData& input_d
         const std::string& col_name = column.first;
         const int col_size = column.second;
         for(std::size_t i=0; i<new_data.getRows().size(); i++){
-            const auto& row = rows[i];
+            const auto& row = new_data.getRows()[i];
+            const std::string& row_name = row.first;
+            const int row_size = row.second;
+            std::vector<std::vector<PatternKey::PatternElement>> all_patterns = MatrixReduction::generate_patterns(col_size, row_size);
             if (!(newly_created_rows[i])){
-                const std::string& row_name = row.first;
-                const int row_size = row.second;
-                std::vector<std::vector<PatternKey::PatternElement>> all_patterns = MatrixReduction::generate_patterns(col_size, row_size);
-
+                
                 for (const auto& pattern : all_patterns) {
                     // Copy value from the original input_data
                     int value = input_data.getPairingValue(row_name, col_name, pattern);
@@ -181,7 +231,15 @@ InputData MatrixReduction::reduce_the_matrix_by_one_dimension(InputData& input_d
             }
             else{
                 // here we calculate the f function look to the thesis page 75
-                
+                std::size_t pos = row_name.rfind('_');
+                std::string old_row_name = row_name.substr(0, pos);
+                int index = std::stoi(row_name.substr(pos + 1));
+
+                for (const auto& pattern : all_patterns) {
+                    // Calculate value using the function f
+                    int value = MatrixReduction::calculate_f_function(input_data, old_row_name, index, col_name, pattern);
+                    new_data.addPairing(row_name, col_name, pattern, value);
+                }
             }
         }
     }
@@ -191,6 +249,9 @@ InputData MatrixReduction::reduce_the_matrix_by_one_dimension(InputData& input_d
 InputData MatrixReduction::reduce_the_matrix_completely(InputData& input_data){
     InputData data;
     while(MatrixReduction::get_maximum_dimension_of_the_matrix(input_data.getRows()) > 0){
+        MatrixReduction::fill_missing_default_values_with_zero(input_data);
+        MatrixReduction::fill_missing_pairing_with_the_default_values(input_data);
+        std::cout<<"reducing by one"<<std::endl;
         data = MatrixReduction::reduce_the_matrix_by_one_dimension(input_data);
     }
     return data;
